@@ -1,6 +1,7 @@
 require 'nokogiri'
 require 'ostruct'
 require 'webrick/cookie'
+require 'nkf'
 
 module Anemone
   class Page
@@ -74,7 +75,32 @@ module Anemone
     #
     def doc
       return @doc if @doc
-      @doc = Nokogiri::HTML(@body) if @body && html? rescue nil
+      if @body && html?
+        charset = current_charset
+        @doc = begin
+          if charset == 'utf-8' || charset.nil?
+            Nokogiri::HTML(@body)
+          else
+            Nokogiri::HTML::Document.parse(@body, nil, charset)
+          end
+        rescue => ex
+          warn ex
+          nil
+        end
+      end
+    end
+
+    def current_charset
+      matcher = content_type.match(/charset="?([^\s"]*)/i)
+      charset = if matcher
+        matcher[1].downcase
+      else
+        NKF.guess(body).to_s
+      end
+
+      charset = 'Windows-31J' if !charset.nil? && charset.downcase == 'shift_jis'
+
+      charset
     end
 
     #
@@ -140,7 +166,7 @@ module Anemone
         href = doc.search('//head/base/@href')
         URI(href.to_s) unless href.nil? rescue nil
       end unless @base
-      
+
       return nil if @base && @base.to_s().empty?
       @base
     end
@@ -185,7 +211,7 @@ module Anemone
        'headers' => Marshal.dump(@headers),
        'data' => Marshal.dump(@data),
        'body' => @body,
-       'links' => links.map(&:to_s), 
+       'links' => links.map(&:to_s),
        'code' => @code,
        'visited' => @visited,
        'depth' => @depth,

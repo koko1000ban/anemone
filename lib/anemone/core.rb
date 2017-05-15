@@ -50,7 +50,7 @@ module Anemone
       :accept_cookies => false,
       # skip any link with a query string? e.g. http://foo.com/?u=user
       :skip_query_strings => false,
-      # proxy server hostname 
+      # proxy server hostname
       :proxy_host => nil,
       # proxy server port number
       :proxy_port => false,
@@ -203,9 +203,9 @@ module Anemone
         if link_queue.empty? and page_queue.empty?
           until link_queue.num_waiting == @tentacles.size
             Thread.pass
-            break unless page_queue.empty? #page queue could be filled again by waiting threads 
+            break unless page_queue.empty? #page queue could be filled again by waiting threads
           end
-          if page_queue.empty? 
+          if page_queue.empty?
             @tentacles.size.times { link_queue << :END }
             break
           end
@@ -306,7 +306,7 @@ module Anemone
         false
       end
     end
-    
+
     #
     # Returns +true+ if *link* should not be visited because
     # it has a query string and +skip_query_strings+ is true.
