@@ -11,6 +11,7 @@ module Anemone
     attr_reader :cookie_store
 
     def initialize(opts = {})
+      @csession = Capybara::Session.new(:poltergeist)
       @connections = {}
       @opts = opts
       @cookie_store = CookieStore.new(@opts[:cookies])
@@ -32,6 +33,17 @@ module Anemone
       begin
         url = URI(url) unless url.is_a?(URI)
         pages = []
+
+        # get_via_capybara(url) do |body, code, headers, redirect_to, response_time|
+        #   pages << Page.new(location, :body => response.body.dup,
+        #                               :code => code,
+        #                               :headers => response.to_hash,
+        #                               :referer => referer,
+        #                               :depth => depth,
+        #                               :redirect_to => redirect_to,
+        #                               :response_time => response_time)
+        # end
+
         get(url, referer) do |response, code, location, redirect_to, response_time|
           pages << Page.new(location, :body => response.body.dup,
                                       :code => code,
@@ -96,6 +108,18 @@ module Anemone
     end
 
     private
+
+    def get_via_capybara(url)
+      loc = url
+      loc = url.merge(loc) if loc.relative?
+
+      Capybara.current_session.driver.add_header('Referer', referer) if !referer.nil?
+      @csession.visit(loc)
+      code = Integer(@csession.status_code)
+      headers = @csession.response_headers
+      body = @csession.body
+      yield body, code, headers, nil, 100
+    end
 
     #
     # Retrieve HTTP responses for *url*, including redirects.
@@ -169,7 +193,7 @@ module Anemone
         http.verify_mode = OpenSSL::SSL::VERIFY_NONE
       end
 
-      @connections[url.host][url.port] = http.start 
+      @connections[url.host][url.port] = http.start
     end
 
     def verbose?

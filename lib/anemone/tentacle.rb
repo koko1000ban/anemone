@@ -32,7 +32,7 @@ module Anemone
     private
 
     def delay
-      sleep @opts[:delay] if @opts[:delay] > 0
+      sleep rand(2 .. @opts[:delay]) if @opts[:delay] > 0
     end
 
   end
